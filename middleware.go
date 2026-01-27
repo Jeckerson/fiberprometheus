@@ -25,9 +25,6 @@ import (
 	"strconv"
 	"time"
 
-	"reflect"
-	"unsafe"
-
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus"
@@ -47,19 +44,13 @@ type FiberPrometheus struct {
 }
 
 func CopyString(s string) string {
-	return string(UnsafeBytes(s))
-}
-func UnsafeBytes(s string) []byte {
 	if s == "" {
-		return nil
+		return ""
 	}
-
-	return (*[MaxStringLen]byte)(unsafe.Pointer(
-		(*reflect.StringHeader)(unsafe.Pointer(&s)).Data),
-	)[:len(s):len(s)]
+	b := make([]byte, len(s))
+	copy(b, s)
+	return string(b)
 }
-
-const MaxStringLen = 0x7fff0000
 
 func create(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
 	if registry == nil {
