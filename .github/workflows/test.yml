@@ -1,8 +1,5 @@
 on:
   push:
-  pull_request:
-  schedule:
-    - cron: "0 7 * * *"
 
 name: Test
 jobs:
@@ -13,12 +10,12 @@ jobs:
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Fetch Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: '${{ matrix.go-version }}'
+
       - name: Run Test
         run: go test -race -count=1
-
