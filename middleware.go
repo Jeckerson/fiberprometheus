@@ -25,13 +25,14 @@ import (
 	"strconv"
 	"time"
 
+	"reflect"
+	"unsafe"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-  "unsafe"
-  "reflect"
 )
 
 // FiberPrometheus ...
@@ -44,6 +45,7 @@ type FiberPrometheus struct {
 	cacheCounter    *prometheus.CounterVec
 	defaultURL      string
 }
+
 func CopyString(s string) string {
 	return string(UnsafeBytes(s))
 }
@@ -56,6 +58,7 @@ func UnsafeBytes(s string) []byte {
 		(*reflect.StringHeader)(unsafe.Pointer(&s)).Data),
 	)[:len(s):len(s)]
 }
+
 const MaxStringLen = 0x7fff0000
 
 func create(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
@@ -208,10 +211,24 @@ func NewWithRegistry(registry prometheus.Registerer, serviceName, namespace, sub
 func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
-	h := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{})))
-	app.Get(ps.defaultURL,func (c fiber.Ctx) error  {
-    return c.Next()
-	}, h...)
+	allHandlers := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{})))
+
+	if len(allHandlers) == 0 {
+		// This shouldn't happen, but just in case
+		return
+	}
+
+	// fiber v3 requires at least one handler as first param, rest as variadic any
+	if len(allHandlers) == 1 {
+		app.Get(ps.defaultURL, allHandlers[0])
+	} else {
+		// Convert []fiber.Handler to []any for variadic parameter
+		restHandlers := make([]any, len(allHandlers)-1)
+		for i, h := range allHandlers[1:] {
+			restHandlers[i] = h
+		}
+		app.Get(ps.defaultURL, allHandlers[0], restHandlers...)
+	}
 }
 
 // Middleware is the actual default middleware implementation

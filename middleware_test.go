@@ -56,25 +56,25 @@ func TestMiddleware(t *testing.T) {
 		}
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/error/fiber", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/error/unknown", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusInternalServerError {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -129,25 +129,25 @@ func TestMiddlewareWithGroup(t *testing.T) {
 		}
 	})
 	req := httptest.NewRequest("GET", "/public", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/public/error/fiber", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/public/error/unknown", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusInternalServerError {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -189,13 +189,13 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -231,13 +231,13 @@ func TestMiddlewareWithLabels(t *testing.T) {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -264,8 +264,8 @@ func TestMiddlewareWithBasicAuth(t *testing.T) {
 
 	prometheus := New("basic-auth")
 	prometheus.RegisterAt(app, "/metrics", basicauth.New(basicauth.Config{
-		Users: map[string]string{
-			"prometheus": "password",
+		Authorizer: func(user, pass string, c fiber.Ctx) bool {
+			return user == "prometheus" && pass == "password"
 		},
 	}))
 
@@ -276,19 +276,19 @@ func TestMiddlewareWithBasicAuth(t *testing.T) {
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 401 {
 		t.Fail()
 	}
 
 	req.SetBasicAuth("prometheus", "password")
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
@@ -309,7 +309,7 @@ func TestMiddlewareWithCustomRegistry(t *testing.T) {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, err := app.Test(req, -1)
+	resp, err := app.Test(req)
 	if err != nil {
 		t.Fail()
 	}
@@ -362,7 +362,7 @@ func TestCustomRegistryRegisterAt(t *testing.T) {
 		return c.SendString("Hello, world!")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	res, err := app.Test(req, -1)
+	res, err := app.Test(req)
 	if err != nil {
 		t.Fatal(fmt.Errorf("GET / failed: %w", err))
 	}
@@ -372,7 +372,7 @@ func TestCustomRegistryRegisterAt(t *testing.T) {
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resMetr, err := app.Test(req, -1)
+	resMetr, err := app.Test(req)
 	if err != nil {
 		t.Fatal(fmt.Errorf("GET /metrics failed: %W", err))
 	}
@@ -410,7 +410,7 @@ func TestWithCacheMiddleware(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		req := httptest.NewRequest("GET", "/myPath", nil)
-		res, err := app.Test(req, -1)
+		res, err := app.Test(req)
 		if err != nil {
 			t.Fatal(fmt.Errorf("GET / failed: %w", err))
 		}
@@ -421,7 +421,7 @@ func TestWithCacheMiddleware(t *testing.T) {
 	}
 
 	req := httptest.NewRequest("GET", "/metrics", nil)
-	res, err := app.Test(req, -1)
+	res, err := app.Test(req)
 	if err != nil {
 		t.Fatal(fmt.Errorf("GET /metrics failed: %W", err))
 	}
@@ -473,7 +473,7 @@ func TestWithCacheMiddlewareWithCustomKey(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		req := httptest.NewRequest("GET", "/myPath", nil)
-		res, err := app.Test(req, -1)
+		res, err := app.Test(req)
 		if err != nil {
 			t.Fatal(fmt.Errorf("GET / failed: %w", err))
 		}
@@ -484,7 +484,7 @@ func TestWithCacheMiddlewareWithCustomKey(t *testing.T) {
 	}
 
 	req := httptest.NewRequest("GET", "/metrics", nil)
-	res, err := app.Test(req, -1)
+	res, err := app.Test(req)
 	if err != nil {
 		t.Fatal(fmt.Errorf("GET /metrics failed: %W", err))
 	}
