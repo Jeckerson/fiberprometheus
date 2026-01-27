@@ -1,4 +1,4 @@
-module github.com/FKouhai/fiberprometheus/v3
+module github.com/Jeckerson/fiberprometheus/v3
 
 go 1.25.0
 
