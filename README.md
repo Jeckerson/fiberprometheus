@@ -26,7 +26,7 @@ http_cache_results
 
 ```
 go get -u github.com/gofiber/fiber/v3
-go get -u github.com/FKouhai/fiberprometheus/v3
+go get -u github.com/Jeckerson/fiberprometheus/v3
 ```
 
 ### Example using v3
@@ -35,7 +35,7 @@ go get -u github.com/FKouhai/fiberprometheus/v3
 package main
 
 import (
-	"github.com/FKouhai/fiberprometheus/v3"
+	"github.com/Jeckerson/fiberprometheus/v3"
 	"github.com/gofiber/fiber/v3"
 )
 
